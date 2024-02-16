@@ -10,11 +10,11 @@ app = Flask(__name__)
 # 创建数据库
 db = SQLAlchemy(app)
 
+# 创建路由及对应的视图函数
 @app.route('/')
 def index():
-    user = User.query.first()
     movies = Movie.query.all()
-    return render_template('index.html', user = user, movies = movies)
+    return render_template('index.html', movies = movies)
 
 @app.route('/user/<name>')
 def user_page(name):
@@ -24,6 +24,17 @@ def user_page(name):
 def test_url_for():
     print(url_for('hello'))
     return 'Test Page'
+
+# 创建错误处理函数，相当于错误页面的视图函数
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
+
+# 创建模板上下文处理函数
+@app.context_processor
+def inject_user():
+    user = User.query.first()
+    return dict(user = user)
 
 # 创建两个模型类，其实就是建表，关键在于继承了db.Model
 class User(db.Model):
