@@ -1,5 +1,4 @@
-from flask import Flask, render_template
-from flask import url_for
+from flask import Flask, render_template, url_for, redirect, flash, request
 from markupsafe import escape
 from flask_sqlalchemy import SQLAlchemy
 import os, sys
@@ -11,8 +10,9 @@ app = Flask(__name__)
 db = SQLAlchemy(app)
 
 # 创建路由及对应的视图函数
-@app.route('/')
+@app.route('/', methods = ['GET', 'POST'])
 def index():
+    verify()
     movies = Movie.query.all()
     return render_template('index.html', movies = movies)
 
@@ -24,6 +24,20 @@ def user_page(name):
 def test_url_for():
     print(url_for('hello'))
     return 'Test Page'
+
+@app.route('/movie/edit/<int:movie_id>', methods=['GET', 'POST'])
+def edit(movie_id):
+    movie = Movie.query.get_or_404(movie_id)
+    verify()
+    return render_template('edit.html', movie = movie)
+
+@app.route('/movie/delete/<int:movie_id>', methods=['POST'])  # 限定只接受 POST 请求
+def delete(movie_id):
+    movie = Movie.query.get_or_404(movie_id)  # 获取电影记录
+    db.session.delete(movie)  # 删除对应的记录
+    db.session.commit()  # 提交数据库会话
+    flash('Item deleted.')
+    return redirect(url_for('index'))  # 重定向回主页
 
 # 创建错误处理函数，相当于错误页面的视图函数
 @app.errorhandler(404)
@@ -55,6 +69,7 @@ else:
 
 app.config['SQLALCHEMY_DATABASE_URI'] = prefix + os.path.join(app.root_path, 'data.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = 'encryption'
 
 @app.cli.command()  # 注册为命令，可以传入 name 参数来自定义命令
 @click.option('--drop', is_flag=True, help='Create after drop.')  # 设置选项
@@ -93,6 +108,21 @@ def forge():
 
     db.session.commit()
     click.echo('Done.')
+
+def verify():
+    if request.method == 'POST':
+        title = request.form.get('title')
+        year = request.form.get('year')
+        # 数据检验
+        if not title or not year or len(year) > 4 or len(title) > 60:
+            flash('Invalid input.') # 显示错误提示
+            return redirect(url_for('index'))
+        # 保存表单数据至数据库
+        movie = Movie(title = title, year = year)
+        db.session.add(movie)
+        db.session.commit()
+        flash('Item created.')
+        return redirect(url_for('index'))
 '''
 db.create_all()
 user = User(name='Grey Li')  # 创建一个 User 记录
