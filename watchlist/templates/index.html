@@ -2,11 +2,13 @@
 
 {% block content %}
 <p>{{ movies|length }} Titles</p>
-<form method="post">
-    Name <input type="text" name="title" autocomplete="off" required>
-    Year <input type="text" name="year" autocomplete="off" required>
-    <input class="btn" type="submit" name="submit" value="Add">
-</form>
+{% if current_user.is_authenticated %}
+    <form method="post">
+        Name <input type="text" name="title" autocomplete="off" required>
+        Year <input type="text" name="year" autocomplete="off" required>
+        <input class="btn" type="submit" name="submit" value="Add">
+    </form>
+{% endif %}
 <ul class="movie-list">
     {% for movie in movies %}
     <li>{{ movie.title }} - {{ movie.year }}
